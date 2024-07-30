@@ -9,12 +9,28 @@ dotenv.config();
 const app = express();
 app.use(cookieParser());
 // Allow requests from localhost:3000
-app.use(
-  cors({
-    origin: "http://localhost:3000",
-    credentials: true, // Enable credentials (cookies, authorization headers, etc.)
-  })
-);
+
+// Update this with the origin of your frontend app
+const whitelist = ["http://localhost:3000", "http://10.1.177.21:56889"];
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (whitelist.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
+// app.use(
+//   cors({
+//     origin: "http://localhost:3000",
+//     credentials: true, // Enable credentials (cookies, authorization headers, etc.)
+//   })
+// );
 // Middleware to parse JSON
 app.use(express.json());
 
