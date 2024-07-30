@@ -223,9 +223,8 @@ const resetCount = async (req, res) => {
 const logoutUser = async (req, res) => {
   try {
     return res
-      .cookie("jwt", "", { maxAge: 1 })
-      .header("token", "")
-      .status(201)
+      .cookie("jwt", "", { maxAge: 1, httpOnly: true }) // Ensure the cookie is cleared
+      .status(200) // Use 200 for successful requests
       .json({
         status: "Logged out",
         message: "User logged out successfully!",

@@ -43,7 +43,7 @@ router
   .patch(isAuthenticated, isAuthorized(), resetCount);
 
 // LOGOUT
-router.route("/logoutUser").post(logoutUser);
+router.route("/logoutUser").post(isAuthenticated, logoutUser);
 
 // Forgot Password
 router.route("/forgotPassword").post(isAuthenticated, forgotPassword);
