@@ -8,29 +8,29 @@ dotenv.config();
 
 const app = express();
 app.use(cookieParser());
-// Allow requests from localhost:3000
 
-// Update this with the origin of your frontend app
-const whitelist = ["http://localhost:3000", "http://10.1.177.21:56889"];
+// CORS configuration
+const whitelist = ["http://localhost:3000", "http://10.1.177.21:4000"];
+
 const corsOptions = {
-  origin: function (origin, callback) {
-    if (whitelist.indexOf(origin) !== -1) {
+  origin: (origin, callback) => {
+    if (whitelist.indexOf(origin) !== -1 || !origin) {
       callback(null, true);
     } else {
       callback(new Error("Not allowed by CORS"));
     }
   },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
 };
 
+// Apply CORS middleware
 app.use(cors(corsOptions));
-// app.use(
-//   cors({
-//     origin: "http://localhost:3000",
-//     credentials: true, // Enable credentials (cookies, authorization headers, etc.)
-//   })
-// );
+
+// Handle pre-flight requests (OPTIONS)
+app.options("*", cors(corsOptions));
+
 // Middleware to parse JSON
 app.use(express.json());
 
@@ -40,12 +40,13 @@ import terminalRoute from "./Routes/terminalRoute.js";
 import portRoute from "./Routes/portRoute.js";
 import searchRoute from "./Routes/searchRoute.js";
 
+// Connect to MongoDB and start the server
 mongoose
   .connect(process.env.MONGODB_URL)
   .then(() => {
     app.listen(process.env.PORT, () => {
       console.log(
-        `Mongodb connected and Listening on the port ${process.env.PORT}`
+        `MongoDB connected and Listening on port ${process.env.PORT}`
       );
     });
   })
@@ -53,6 +54,7 @@ mongoose
     console.log(err);
   });
 
+// Define routes
 app.use("/auth", authRoute);
 app.use("/command", commandRoute);
 app.use("/terminal", terminalRoute);
