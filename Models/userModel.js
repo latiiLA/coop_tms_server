@@ -34,7 +34,7 @@ const userSchema = mongoose.Schema(
       type: String,
       lowercase: true,
       required: [true, "Please enter role"],
-      enum: ["user", "admin"],
+      enum: ["user", "admin", "tempo_user", "tempo_admin"],
       default: "user",
     },
     password: {
