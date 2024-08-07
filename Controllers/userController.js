@@ -274,6 +274,12 @@ const forgotPassword = async (req, res) => {
       foundUser.status = "Active";
     }
 
+    if (foundUser.role == "tempo_user") {
+      foundUser.role = "user";
+    } else {
+      foundUser.role = "admin";
+    }
+
     // Save the updated user
     await foundUser.save();
 
