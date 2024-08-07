@@ -55,22 +55,105 @@ const getPorts = async (req, res) => {
   });
 };
 
+// const getAssignedPorts = async (req, res) => {
+//   try {
+//     const { portSiteAssignment, portAssignment } = req.query;
+//     console.log("Query Params:", portSiteAssignment, portAssignment); // Log query params
+
+//     // Fetch ports with their capacities and used port counts
+//     const ports = await Port.find({
+//       portSiteAssignment,
+//       portAssignment,
+//       isDeleted: false,
+//     }).select("portNumber portCapacity usedPorts");
+
+//     console.log("Fetched Ports:", ports); // Log fetched ports
+
+//     // Filter ports where usedPortsCount is less than portCapacity
+//     const availablePorts = ports
+//       .filter((port) => {
+//         console.log(
+//           `Port: ${port.portNumber}, Capacity: ${port.portCapacity}, Used: ${port.usedPorts}`
+//         );
+//         return port.usedPorts < port.portCapacity;
+//       })
+//       .map((port) => port.portNumber);
+
+//     console.log("Available Ports:", availablePorts); // Log available ports
+
+//     // Respond with the available port numbers as JSON
+//     res.status(200).json({ availablePorts });
+//   } catch (error) {
+//     console.error("Error fetching assigned ports:", error);
+//     res.status(500).json({ error: "Failed to fetch assigned ports" });
+//   }
+// };
+
 const getAssignedPorts = async (req, res) => {
   try {
     const { portSiteAssignment, portAssignment } = req.query;
     console.log("Query Params:", portSiteAssignment, portAssignment); // Log query params
 
-    // Fetch ports with their capacities and used port counts
-    const ports = await Port.find({
-      portSiteAssignment,
-      portAssignment,
+    // Fetch ports based on the specified type and site
+    const specificPorts = await Port.find({
+      portAssignment: portAssignment,
+      portSiteAssignment: portSiteAssignment,
       isDeleted: false,
     }).select("portNumber portCapacity usedPorts");
 
-    console.log("Fetched Ports:", ports); // Log fetched ports
+    console.log("Specific Ports:", specificPorts); // Log specific ports
+
+    // Fetch ports assigned to BothType with the specified site
+    const bothTypePorts = await Port.find({
+      portAssignment: "BothType",
+      portSiteAssignment: portSiteAssignment,
+      isDeleted: false,
+    }).select("portNumber portCapacity usedPorts");
+
+    console.log("BothType Ports:", bothTypePorts); // Log BothType ports
+
+    // Fetch ports assigned to BothSite with the specified type
+    const bothSitePorts = await Port.find({
+      portAssignment: portAssignment,
+      portSiteAssignment: "BothSite",
+      isDeleted: false,
+    }).select("portNumber portCapacity usedPorts");
+
+    console.log("BothSite Ports:", bothSitePorts); // Log BothSite ports
+
+    // Fetch ports assigned to BothType and BothSite (no specific filter)
+    const bothTypeAndSitePorts = await Port.find({
+      portAssignment: "BothType",
+      portSiteAssignment: "BothSite",
+      isDeleted: false,
+    }).select("portNumber portCapacity usedPorts");
+
+    console.log("BothType and BothSite Ports:", bothTypeAndSitePorts); // Log BothType and BothSite ports
+
+    // Combine all fetched ports
+    const allPorts = [
+      ...specificPorts,
+      ...bothTypePorts,
+      ...bothSitePorts,
+      ...bothTypeAndSitePorts,
+    ];
+
+    console.log("All Ports Before Deduplication:", allPorts); // Log all ports before deduplication
+
+    // Remove duplicates based on portNumber
+    const uniquePortsMap = new Map();
+    allPorts.forEach((port) => {
+      if (!uniquePortsMap.has(port.portNumber)) {
+        uniquePortsMap.set(port.portNumber, port);
+      }
+    });
+
+    const uniquePorts = Array.from(uniquePortsMap.values());
+
+    console.log("Unique Ports:", uniquePorts); // Log unique ports
 
     // Filter ports where usedPortsCount is less than portCapacity
-    const availablePorts = ports
+    const availablePorts = uniquePorts
       .filter((port) => {
         console.log(
           `Port: ${port.portNumber}, Capacity: ${port.portCapacity}, Used: ${port.usedPorts}`

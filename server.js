@@ -10,7 +10,11 @@ const app = express();
 app.use(cookieParser());
 
 // CORS configuration
-const whitelist = ["http://localhost:3000", "http://10.1.177.21:4000"];
+const whitelist = [
+  "http://localhost:3000",
+  "http://localhost:4000",
+  "http://10.1.177.21:4000",
+];
 
 const corsOptions = {
   origin: (origin, callback) => {
@@ -20,7 +24,7 @@ const corsOptions = {
       callback(new Error("Not allowed by CORS"));
     }
   },
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
 };

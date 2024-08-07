@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const portSchema = mongoose.Schema(
+const portSchema = new mongoose.Schema(
   {
     portName: {
       type: String,
@@ -14,11 +14,11 @@ const portSchema = mongoose.Schema(
     },
     portAssignment: {
       type: String,
-      required: [true, "Please assign ATM type the Port is used for."],
+      required: [true, "Please enter port type assignment."],
     },
     portSiteAssignment: {
       type: String,
-      required: [true, "Please assign ATM site to the Port."],
+      required: [true, "Please enter port site assignment."],
     },
     usedPorts: {
       type: Number,
@@ -39,6 +39,16 @@ const portSchema = mongoose.Schema(
   },
   { timestamps: true }
 );
+
+portSchema.pre("save", function (next) {
+  if (!this.portAssignment || this.portAssignment.length === 0) {
+    this.portAssignment = ["NCR", "CRM"];
+  }
+  if (!this.portSiteAssignment || this.portSiteAssignment.length === 0) {
+    this.portSiteAssignment = ["ONSITE", "OFFSITE"];
+  }
+  next();
+});
 
 const Port = mongoose.model("Port", portSchema);
 

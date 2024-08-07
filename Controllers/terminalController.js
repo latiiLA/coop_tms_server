@@ -53,16 +53,16 @@ const createTerminal = async (req, res) => {
       return res.status(400).json({ message: "Port capacity is reached." });
     }
 
-    if (existingPort.portSiteAssignment !== site) {
-      return res
-        .status(400)
-        .json({ message: "This port not assigned for this site" });
-    }
-    if (existingPort.portAssignment !== type) {
-      return res
-        .status(400)
-        .json({ message: "This port not assigned for this ATM type" });
-    }
+    // if (existingPort.portSiteAssignment !== site) {
+    //   return res
+    //     .status(400)
+    //     .json({ message: "This port not assigned for this site" });
+    // }
+    // if (existingPort.portAssignment !== type) {
+    //   return res
+    //     .status(400)
+    //     .json({ message: "This port not assigned for this ATM type" });
+    // }
 
     // Increment the used count of the port
     existingPort.usedPorts += 1;
@@ -248,16 +248,16 @@ const updateTerminal = async (req, res) => {
     if (existingPort.usedPorts >= existingPort.portCapacity) {
       return res.status(400).json({ message: "Port capacity is reached." });
     }
-    if (existingPort.portSiteAssignment !== updateData.site) {
-      return res
-        .status(400)
-        .json({ message: "This port is not assigned for this site." });
-    }
-    if (existingPort.portAssignment !== updateData.type) {
-      return res
-        .status(400)
-        .json({ message: "This port is not assigned for this ATM type." });
-    }
+    // if (existingPort.portSiteAssignment !== updateData.site) {
+    //   return res
+    //     .status(400)
+    //     .json({ message: "This port is not assigned for this site." });
+    // }
+    // if (existingPort.portAssignment !== updateData.type) {
+    //   return res
+    //     .status(400)
+    //     .json({ message: "This port is not assigned for this ATM type." });
+    // }
 
     // Find the existing terminal
     const existingTerminal = await Terminal.findById(id);

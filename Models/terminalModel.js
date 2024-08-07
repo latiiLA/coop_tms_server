@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const terminalSchema = mongoose.Schema(
   {
     unitId: {
-      type: Number,
+      type: String,
       required: [true, "Please enter terminal Unit ID."],
     },
     type: {
@@ -23,9 +23,9 @@ const terminalSchema = mongoose.Schema(
       type: String,
       required: [true, "Please enter branch name."],
     },
-    acceptorLocation: {
+    district: {
       type: String,
-      required: [true, "Please enter acceptor location."],
+      required: [true, "Please enter district."],
     },
     site: {
       type: String,
