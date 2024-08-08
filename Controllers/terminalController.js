@@ -10,7 +10,7 @@ const createTerminal = async (req, res) => {
       terminalId,
       terminalName,
       branchName,
-      acceptorLocation,
+      district,
       site,
       cbsAccount,
       port,
@@ -75,7 +75,7 @@ const createTerminal = async (req, res) => {
       terminalName,
       branchName,
       site,
-      acceptorLocation,
+      district,
       cbsAccount,
       port,
       ipAddress,
@@ -263,6 +263,10 @@ const updateTerminal = async (req, res) => {
     const existingTerminal = await Terminal.findById(id);
     if (!existingTerminal) {
       return res.status(404).json({ message: "Terminal not found." });
+    }
+
+    if (updateData.status === "Stopped" || updateData.status === "Relocated") {
+      updateData.isDeleted = true;
     }
 
     // Update the terminal

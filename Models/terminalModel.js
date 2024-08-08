@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const terminalSchema = mongoose.Schema(
   {
     unitId: {
-      type: String,
+      type: Number,
       required: [true, "Please enter terminal Unit ID."],
     },
     type: {

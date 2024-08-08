@@ -116,9 +116,9 @@ const loginUser = async (req, res) => {
     }
     if (user.wrongPasswordCount > 4) {
       console.log("password count exceeded");
-      return res
-        .status(401)
-        .json({ message: "Username or password is incorrect." });
+      return res.status(401).json({
+        message: "Your account is locked! Please contact your administractor.",
+      });
     }
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) {
@@ -126,9 +126,11 @@ const loginUser = async (req, res) => {
       user.wrongPasswordCount += 1;
       await user.save();
       console.log("password is not correct.");
-      return res
-        .status(401)
-        .json({ message: "Username or password is incorrect." });
+      return res.status(401).json({
+        message: `Wrong password! You are left with ${
+          5 - user.wrongPasswordCount
+        } tries.`,
+      });
     }
 
     user.wrongPasswordCount = 0;
