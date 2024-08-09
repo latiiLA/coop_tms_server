@@ -1,6 +1,7 @@
 import Port from "../Models/portModel.js";
 
 const createPort = async (req, res) => {
+  let createdBy = req.auth_user._id;
   try {
     // console.log(req.body);
     const {
@@ -27,6 +28,7 @@ const createPort = async (req, res) => {
       portAssignment,
       portSiteAssignment,
       portCapacity,
+      createdBy,
     });
 
     console.log(new_port);

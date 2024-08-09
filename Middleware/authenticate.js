@@ -12,10 +12,9 @@ const isAuthenticated = (req, res, next) => {
     req.headers.cookie?.split("=")[1] ||
     req.cookies?.jwt;
 
-  // console.log("token inside auth", token);
   if (token) {
     const bearer = token.split(" ");
-    if (bearer.length == 2) {
+    if (bearer.length === 2) {
       token = bearer[1];
     } else {
       token = bearer[0];
@@ -30,21 +29,32 @@ const isAuthenticated = (req, res, next) => {
           })
           .end();
       } else {
-        let user = await await User.findById(decodedToken.id._id);
+        try {
+          // Query to find the user with the decoded ID and isDeleted: false
+          const user = await User.findOne({
+            _id: decodedToken.id._id,
+            isDeleted: false,
+          });
 
-        if (!user) {
+          if (!user) {
+            return res
+              .status(400)
+              .json({
+                message:
+                  "User not authenticated or token sent is bad or expired.",
+              })
+              .end();
+          }
+          req.auth_user = user;
+          next();
+        } catch (error) {
           return res
-            .status(400)
+            .status(500)
             .json({
-              message:
-                "User not authenticated or token sent is bad or expired.",
+              message: "An error occurred during authentication.",
             })
             .end();
         }
-        req.auth_user = user;
-        // console.log("inside is isAthenticated", user);
-        next();
-        return;
       }
     });
   } else {

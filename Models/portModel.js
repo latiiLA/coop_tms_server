@@ -28,14 +28,10 @@ const portSchema = new mongoose.Schema(
       type: Number,
       required: [true, "Please enter port capacity."],
     },
-    isDeleted: {
-      type: Boolean,
-      default: false,
+    createdBy: {
+      type: mongoose.Types.ObjectId,
+      required: [true, "Creater user id is required"],
     },
-    // createdby: {
-    //   type: String,
-    //   required: [true, "Created user id is required"],
-    // },
   },
   { timestamps: true }
 );

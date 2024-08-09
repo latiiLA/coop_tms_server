@@ -11,6 +11,7 @@ export const createToken = (id) => {
 };
 
 const createUser = async (req, res) => {
+  let createdBy = req.auth_user._id;
   try {
     // console.log(req.body);
     const {
@@ -48,6 +49,7 @@ const createUser = async (req, res) => {
       role,
       username,
       password: hashPassword,
+      createdBy,
     });
 
     console.log(user);
@@ -278,16 +280,25 @@ const forgotPassword = async (req, res) => {
 
     if (foundUser.role == "tempo_user") {
       foundUser.role = "user";
+      await foundUser.save();
+      const token = createToken(foundUser);
+      res.header("token", token);
+      res.cookie("jwt", token, { httpOnly: true, maxAge: maxAge * 1000 });
     } else {
       foundUser.role = "admin";
+      await foundUser.save();
+      const token = createToken(foundUser);
+      res.header("token", token);
+      res.cookie("jwt", token, { httpOnly: true, maxAge: maxAge * 1000 });
     }
 
     // Save the updated user
-    await foundUser.save();
 
     res.status(200).json({
+      // token: token,
       status: "true",
       message: "Password updated successfully",
+      data: user,
     });
   } catch (error) {
     console.error("forgot password error", error);

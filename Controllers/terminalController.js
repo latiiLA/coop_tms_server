@@ -1,8 +1,14 @@
 import Terminal from "../Models/terminalModel.js";
 import Port from "../Models/portModel.js";
+import mongoose from "mongoose";
 
 const createTerminal = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
+    let createdBy = req.auth_user._id;
+    console.log("created by", createdBy);
     // console.log(req.body);
     const {
       unitId,
@@ -66,20 +72,31 @@ const createTerminal = async (req, res) => {
 
     // Increment the used count of the port
     existingPort.usedPorts += 1;
-    await existingPort.save();
+    await existingPort.save({ session });
 
-    const terminal = await Terminal.create({
-      unitId,
-      type,
-      terminalId,
-      terminalName,
-      branchName,
-      site,
-      district,
-      cbsAccount,
-      port,
-      ipAddress,
-    });
+    // Create the terminal
+    const terminal = await Terminal.create(
+      [
+        {
+          unitId,
+          type,
+          terminalId,
+          terminalName,
+          branchName,
+          site,
+          district,
+          cbsAccount,
+          port,
+          ipAddress,
+          createdBy,
+        },
+      ],
+      { session }
+    );
+
+    // If everything went well, commit the transaction
+    await session.commitTransaction();
+    session.endSession();
 
     console.log(terminal);
     res.status(200).json({
@@ -89,6 +106,8 @@ const createTerminal = async (req, res) => {
     });
   } catch (error) {
     console.log(error);
+    await session.abortTransaction();
+    session.endSession();
     res.status(500).json({
       status: "error",
       error: "An error occurred while creating the ATM.",

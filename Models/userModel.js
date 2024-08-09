@@ -44,10 +44,10 @@ const userSchema = mongoose.Schema(
       // minLength: 8,
       select: false,
     },
-    // createdby: {
-    //   type: String,
-    //   required: [true, "Created user id is required"],
-    // },
+    createdBy: {
+      type: mongoose.Types.ObjectId,
+      required: [true, "Creater user id is required"],
+    },
     status: {
       type: String,
       default: "New",
