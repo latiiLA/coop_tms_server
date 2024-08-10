@@ -1,4 +1,5 @@
 import User from "../Models/userModel.js";
+import UserActivityLog from "../Models/userActivityLogModel.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
@@ -52,6 +53,17 @@ const createUser = async (req, res) => {
       createdBy,
     });
 
+    // Log the activity
+    const newLog = new UserActivityLog({
+      userId: req.user._id,
+      action: "create_record",
+      description: "User created a new record",
+      ipAddress: req.ip,
+      userAgent: req.get("User-Agent"),
+    });
+
+    await newLog.save();
+
     console.log(user);
     res.status(200).json({
       _id: user._id,
@@ -99,29 +111,25 @@ const getUserRole = async (req, res) => {
 
 const loginUser = async (req, res) => {
   try {
-    // console.log(req.body);
-
     const { username, password } = req.body;
-    console.log(username, password);
 
     const user = await User.findOne({
       username: username,
       isDeleted: false,
     }).select("+password");
-    console.log(user);
 
     if (!user) {
-      console.log("User not found");
       return res
         .status(401)
         .json({ message: "Username or password is incorrect." });
     }
+
     if (user.wrongPasswordCount > 4) {
-      console.log("password count exceeded");
       return res.status(401).json({
-        message: "Your account is locked! Please contact your administractor.",
+        message: "Your account is locked! Please contact your administrator.",
       });
     }
+
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) {
       // res.send("wrong password");
@@ -145,6 +153,18 @@ const loginUser = async (req, res) => {
 
     res.header("token", token);
     res.cookie("jwt", token, { httpOnly: true, maxAge: maxAge * 1000 });
+
+    // Log the successful login activity
+    const newLog = new UserActivityLog({
+      userId: user._id,
+      action: "login",
+      description: "User logged in successfully",
+      ipAddress: req.ip,
+      userAgent: req.get("User-Agent"),
+    });
+
+    await newLog.save();
+
     return res.status(200).json({
       token: token,
       message: "User logged in successfully",
@@ -163,31 +183,39 @@ const loginUser = async (req, res) => {
 
 const deleteUser = async (req, res) => {
   try {
-    // Extract terminal ID from request parameters
+    // Extract user ID from request parameters
     const userId = req.params.id;
 
-    // Validate terminal ID (you can use a more robust validation if needed)
+    // Validate user ID (you can use a more robust validation if needed)
     if (!userId) {
       return res.status(400).json({ message: "User ID is required" });
     }
 
-    // Interact with the database to perform a soft delete
-    const result = await User.findByIdAndUpdate(
+    // Fetch the user details to check their role
+    const user = await User.findById(userId);
+
+    // If the user does not exist
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    // Check if the user's role is superadmin
+    if (user.role === "superadmin") {
+      return res.status(403).json({ message: "Superadmin cannot be delete." });
+    }
+
+    // Perform a soft delete if the role is not superadmin
+    const response = await User.findByIdAndUpdate(
       userId,
       { status: "Deleted", isDeleted: true },
       { new: true }
     );
 
-    // If the terminal does not exist
-    if (!result) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
     // Return a success response
     res.status(200).json({ message: "User marked as deleted successfully" });
   } catch (error) {
     // Handle any errors
-    console.error("Error deleting User:", error);
+    console.error("Error deleting user:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -226,16 +254,39 @@ const resetCount = async (req, res) => {
 
 const logoutUser = async (req, res) => {
   try {
+    // Ensure that the user is authenticated
+    console.log("logged", req.auth_user);
+    if (!req.auth_user || !req.auth_user._id) {
+      return res
+        .status(401)
+        .json({ error: "User is not authenticated ." })
+        .end();
+    }
+
+    // Log the activity
+    const newLog = new UserActivityLog({
+      userId: req.auth_user._id,
+      action: "logout",
+      description: "User logged out",
+      ipAddress: req.ip,
+      userAgent: req.get("User-Agent"),
+    });
+
+    // Save the log to the database
+    await newLog.save();
+
+    // Clear the JWT cookie and send the response
     return res
-      .cookie("jwt", "", { maxAge: 1, httpOnly: true }) // Ensure the cookie is cleared
-      .status(200) // Use 200 for successful requests
+      .cookie("jwt", "", { maxAge: 1, httpOnly: true, secure: true }) // Secure flag should be true in production
+      .status(200)
       .json({
         status: "Logged out",
         message: "User logged out successfully!",
       })
       .end();
   } catch (error) {
-    return res.status(400).json({ error: "Error while logging out!" }).end();
+    console.error("Error while logging out:", error);
+    return res.status(500).json({ error: "Error while logging out!" }).end();
   }
 };
 
@@ -280,19 +331,14 @@ const forgotPassword = async (req, res) => {
 
     if (foundUser.role == "tempo_user") {
       foundUser.role = "user";
-      await foundUser.save();
-      const token = createToken(foundUser);
-      res.header("token", token);
-      res.cookie("jwt", token, { httpOnly: true, maxAge: maxAge * 1000 });
-    } else {
+    } else if (foundUser.role == "tempo_admin") {
       foundUser.role = "admin";
-      await foundUser.save();
-      const token = createToken(foundUser);
-      res.header("token", token);
-      res.cookie("jwt", token, { httpOnly: true, maxAge: maxAge * 1000 });
+    } else {
+      foundUser.role = "superadmin";
     }
 
     // Save the updated user
+    await foundUser.save();
 
     res.status(200).json({
       // token: token,

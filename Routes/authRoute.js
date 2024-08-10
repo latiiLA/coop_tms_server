@@ -14,10 +14,15 @@ import {
   forgotPassword,
 } from "../Controllers/userController.js";
 import isAuthenticated from "../Middleware/authenticate.js";
-import isAuthorized from "../Middleware/authorization.js";
+import {
+  isAuthorized,
+  isSuperAuthorized,
+} from "../Middleware/authorization.js";
 
 // CREATE USER
-router.route("/createUser").post(isAuthenticated, isAuthorized(), createUser);
+router
+  .route("/createUser")
+  .post(isAuthenticated, isSuperAuthorized(), createUser);
 
 // get users
 router.route("/getUser").get(isAuthenticated, isAuthorized(), getUser);
@@ -34,7 +39,7 @@ router.route("/loginUser").post(loginUser);
 // DELETE
 router
   .route("/deleteUser/:id")
-  .patch(isAuthenticated, isAuthorized(), deleteUser);
+  .patch(isAuthenticated, isSuperAuthorized(), deleteUser);
 
 // Patch reset password count
 // DELETE

@@ -2,7 +2,7 @@ import express from "express";
 const app = express();
 const router = express.Router();
 import isAuthenticated from "../Middleware/authenticate.js";
-import isAuthorized from "../Middleware/authorization.js";
+import { isAuthorized } from "../Middleware/authorization.js";
 
 import {
   createTerminal,

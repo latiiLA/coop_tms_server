@@ -9,7 +9,7 @@ import {
   deletePort,
 } from "../Controllers/portController.js";
 import isAuthenticated from "../Middleware/authenticate.js";
-import isAuthorized from "../Middleware/authorization.js";
+import { isAuthorized } from "../Middleware/authorization.js";
 
 // CREATE command
 router.route("/createPort").post(isAuthenticated, isAuthorized(), createPort);
