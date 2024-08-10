@@ -9,6 +9,7 @@ const EducationLevel = {
 const Roles = {
   ADMIN: "admin",
   USER: "user",
+  SUPERADMIN: "superadmin",
 };
 
 // OpportunityType object
