@@ -47,7 +47,7 @@ const createPort = async (req, res) => {
 };
 
 const getPorts = async (req, res) => {
-  const ports = await Port.find({ isDeleted: false });
+  const ports = await Port.find();
 
   // console.log(user);
 

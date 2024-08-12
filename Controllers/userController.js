@@ -12,9 +12,8 @@ export const createToken = (id) => {
 };
 
 const createUser = async (req, res) => {
-  let createdBy = req.auth_user._id;
   try {
-    // console.log(req.body);
+    let createdBy = req.auth_user._id;
     const {
       firstName,
       fatherName,
@@ -26,21 +25,27 @@ const createUser = async (req, res) => {
       password,
     } = req.body;
 
-    const existing_email = await User.findOne({
+    // Check for existing email and username
+    const existingEmail = await User.findOne({
       email: email,
       isDeleted: false,
     });
-    const existing_username = await User.findOne({
+
+    const existingUsername = await User.findOne({
       username: username,
       isDeleted: false,
     });
-    if (existing_email || existing_username) {
-      return res.status(500).json({ message: "User already exists" });
+
+    if (existingEmail || existingUsername) {
+      console.log("User already exists:", { existingEmail, existingUsername });
+      return res.status(409).json({ message: "User already exists" });
     }
 
+    // Hash the password
     const hashPassword = await bcrypt.hash(password, 13);
-    // console.log(hashPassword);
+    console.log("Hashed password:", hashPassword);
 
+    // Create the new user
     const user = await User.create({
       firstName,
       fatherName,
@@ -53,29 +58,35 @@ const createUser = async (req, res) => {
       createdBy,
     });
 
-    // Log the activity
-    const newLog = new UserActivityLog({
-      userId: req.user._id,
-      action: "create_record",
-      description: "User created a new record",
-      ipAddress: req.ip,
-      userAgent: req.get("User-Agent"),
-    });
+    // Attempt to log the activity
+    try {
+      const newLog = new UserActivityLog({
+        userId: createdBy,
+        action: "create_record",
+        description: "User created a new user record",
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
 
-    await newLog.save();
+      await newLog.save();
+      console.log("Activity logged successfully.");
+    } catch (logError) {
+      console.error("Error logging activity:", logError);
+    }
 
-    console.log(user);
-    res.status(200).json({
-      _id: user._id,
+    // Respond with success
+    console.log("User created successfully:", user);
+    res.status(201).json({
       status: "success",
       user,
       message: "User created successfully.",
     });
   } catch (error) {
-    console.log(error);
+    console.error("Error creating a user:", error);
     res.status(500).json({
       status: "error",
       message: "An error occurred while creating the user.",
+      error: error.message, // Include error message for debugging
     });
   }
 };

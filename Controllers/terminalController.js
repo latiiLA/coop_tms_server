@@ -3,13 +3,8 @@ import Port from "../Models/portModel.js";
 import mongoose from "mongoose";
 
 const createTerminal = async (req, res) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
     let createdBy = req.auth_user._id;
-    console.log("created by", createdBy);
-    // console.log(req.body);
     const {
       unitId,
       type,
@@ -23,80 +18,55 @@ const createTerminal = async (req, res) => {
       ipAddress,
     } = req.body;
 
-    const existingunitId = await Terminal.findOne({
-      unitId: unitId,
-      type: type,
-    });
-    if (existingunitId) {
-      return res.status(400).json({ message: "Unit id already exists." });
+    // Check for existing records
+    const existingUnitId = await Terminal.findOne({ unitId, type });
+    if (existingUnitId) {
+      throw new Error("Unit id already exists.");
     }
 
-    const existingterminalId = await Terminal.findOne({
-      terminalId: terminalId,
-    });
-    if (existingterminalId) {
-      return res.status(400).json({ message: "Terminal id already exists." });
+    const existingTerminalId = await Terminal.findOne({ terminalId });
+    if (existingTerminalId) {
+      throw new Error("Terminal id already exists.");
     }
-    const existingcbsAccount = await Terminal.findOne({
-      cbsAccount: cbsAccount,
-    });
-    if (existingcbsAccount) {
-      return res.status(400).json({ message: "CBS account already exists." });
+
+    const existingCbsAccount = await Terminal.findOne({ cbsAccount });
+    if (existingCbsAccount) {
+      throw new Error("CBS account already exists.");
     }
-    const existingipAddress = await Terminal.findOne({
-      ipAddress: ipAddress,
-    });
-    if (existingipAddress) {
-      return res.status(400).json({ message: "Ip address already exists." });
+
+    const existingIpAddress = await Terminal.findOne({ ipAddress });
+    if (existingIpAddress) {
+      throw new Error("Ip address already exists.");
     }
-    console.log("port number in create terminal", port);
+
+    // Check port validity and availability
     const existingPort = await Port.findOne({ portNumber: port });
     if (!existingPort) {
-      return res.status(400).json({ message: "Port number does not exist." });
-    }
-    // console.log(existing)
-    if (existingPort.usedPorts >= existingPort.portCapacity) {
-      return res.status(400).json({ message: "Port capacity is reached." });
+      throw new Error("Port number does not exist.");
     }
 
-    // if (existingPort.portSiteAssignment !== site) {
-    //   return res
-    //     .status(400)
-    //     .json({ message: "This port not assigned for this site" });
-    // }
-    // if (existingPort.portAssignment !== type) {
-    //   return res
-    //     .status(400)
-    //     .json({ message: "This port not assigned for this ATM type" });
-    // }
+    if (existingPort.usedPorts >= existingPort.portCapacity) {
+      throw new Error("Port capacity is reached.");
+    }
 
     // Increment the used count of the port
     existingPort.usedPorts += 1;
-    await existingPort.save({ session });
+    await existingPort.save();
 
     // Create the terminal
-    const terminal = await Terminal.create(
-      [
-        {
-          unitId,
-          type,
-          terminalId,
-          terminalName,
-          branchName,
-          site,
-          district,
-          cbsAccount,
-          port,
-          ipAddress,
-          createdBy,
-        },
-      ],
-      { session }
-    );
-
-    // If everything went well, commit the transaction
-    await session.commitTransaction();
-    session.endSession();
+    const terminal = await Terminal.create({
+      unitId,
+      type,
+      terminalId,
+      terminalName,
+      branchName,
+      site,
+      district,
+      cbsAccount,
+      port,
+      ipAddress,
+      createdBy,
+    });
 
     console.log(terminal);
     res.status(200).json({
@@ -105,12 +75,11 @@ const createTerminal = async (req, res) => {
       message: "The terminal is successfully created.",
     });
   } catch (error) {
-    console.log(error);
-    await session.abortTransaction();
-    session.endSession();
+    console.log("Error creating terminal:", error.message);
+
     res.status(500).json({
       status: "error",
-      error: "An error occurred while creating the ATM.",
+      error: error.message || "An error occurred while creating the terminal.",
     });
   }
 };
