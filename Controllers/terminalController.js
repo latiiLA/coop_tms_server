@@ -152,7 +152,7 @@ const getSiteCounts = async (req, res) => {
           onsite: {
             $sum: {
               $cond: {
-                if: { $eq: ["$_id.site", "ONSITE"] },
+                if: { $eq: ["$_id.site", "Onsite"] },
                 then: "$count",
                 else: 0,
               },
@@ -161,7 +161,7 @@ const getSiteCounts = async (req, res) => {
           offsite: {
             $sum: {
               $cond: {
-                if: { $eq: ["$_id.site", "OFFSITE"] },
+                if: { $eq: ["$_id.site", "Offsite"] },
                 then: "$count",
                 else: 0,
               },
