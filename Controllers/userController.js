@@ -45,19 +45,6 @@ const createUser = async (req, res) => {
     const hashPassword = await bcrypt.hash(password, 13);
     console.log("Hashed password:", hashPassword);
 
-    // Create the new user
-    const user = await User.create({
-      firstName,
-      fatherName,
-      gfatherName,
-      email,
-      department,
-      role,
-      username,
-      password: hashPassword,
-      createdBy,
-    });
-
     // Attempt to log the activity
     try {
       const newLog = new UserActivityLog({
@@ -73,6 +60,19 @@ const createUser = async (req, res) => {
     } catch (logError) {
       console.error("Error logging activity:", logError);
     }
+
+    // Create the new user
+    const user = await User.create({
+      firstName,
+      fatherName,
+      gfatherName,
+      email,
+      department,
+      role,
+      username,
+      password: hashPassword,
+      createdBy,
+    });
 
     // Respond with success
     console.log("User created successfully:", user);
