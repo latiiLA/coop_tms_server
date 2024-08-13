@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 // create json web token 30 -means 30 days
-const maxAge = 30 * 24 * 60 * 60;
+const maxAge = 1 * 24 * 60 * 60;
 export const createToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: maxAge,
