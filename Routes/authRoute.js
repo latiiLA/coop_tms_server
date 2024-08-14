@@ -12,6 +12,7 @@ import {
   getUserRole,
   resetCount,
   forgotPassword,
+  resetPassword,
 } from "../Controllers/userController.js";
 import isAuthenticated from "../Middleware/authenticate.js";
 import {
@@ -52,5 +53,9 @@ router.route("/logoutUser").post(isAuthenticated, logoutUser);
 
 // Forgot Password
 router.route("/forgotPassword").post(isAuthenticated, forgotPassword);
+
+router
+  .route("/resetPassword/:id")
+  .patch(isAuthenticated, isSuperAuthorized(), resetPassword);
 
 export default router;
