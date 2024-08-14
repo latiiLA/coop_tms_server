@@ -87,10 +87,10 @@ const createTerminal = async (req, res) => {
 const getTerminal = async (req, res) => {
   try {
     let role = req.auth_user.role;
-    console.log("user in get terminal", role);
+    // console.log("user in get terminal", role);
     const terminals = await Terminal.find({ isDeleted: false });
 
-    console.log(terminals);
+    // console.log(terminals);
 
     res.status(200).json({
       status: "true",
@@ -197,7 +197,7 @@ const updateTerminal = async (req, res) => {
       terminalId: updateData.terminalId,
     });
     if (existingTerminalById) {
-      return res.status(400).json({ message: "Terminal ID already exists." });
+      return res.status(400).json({ message: "Terminal ID already in use." });
     }
 
     // Validate if the unitId is already in use
@@ -228,14 +228,6 @@ const updateTerminal = async (req, res) => {
       return res.status(400).json({ message: "CBS Account already exists." });
     }
 
-    // Validate if the port number exists and has capacity
-    const existingPort = await Port.findOne({ portNumber: updateData.port });
-    if (!existingPort) {
-      return res.status(400).json({ message: "Port number does not exist." });
-    }
-    if (existingPort.usedPorts >= existingPort.portCapacity) {
-      return res.status(400).json({ message: "Port capacity is reached." });
-    }
     // if (existingPort.portSiteAssignment !== updateData.site) {
     //   return res
     //     .status(400)
@@ -255,6 +247,17 @@ const updateTerminal = async (req, res) => {
 
     if (updateData.status === "Stopped" || updateData.status === "Relocated") {
       updateData.isDeleted = true;
+    }
+
+    if (existingTerminal.port !== updateData.port) {
+      // Validate if the port number exists and has capacity
+      const existingPort = await Port.findOne({ portNumber: updateData.port });
+      if (!existingPort) {
+        return res.status(400).json({ message: "Port number does not exist." });
+      }
+      if (existingPort.usedPorts >= existingPort.portCapacity) {
+        return res.status(400).json({ message: "Port capacity is reached." });
+      }
     }
 
     // Update the terminal
