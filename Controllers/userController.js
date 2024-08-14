@@ -25,43 +25,63 @@ const createUser = async (req, res) => {
       password,
     } = req.body;
 
-    // Check for existing email and username
-    const existingEmail = await User.findOne({
-      email: email,
-      isDeleted: false,
-    });
+    // Check for existing email and username, including soft-deleted users
+    const existingEmail = await User.findOne({ email });
+    const existingUsername = await User.findOne({ username });
 
-    const existingUsername = await User.findOne({
-      username: username,
-      isDeleted: false,
-    });
-
-    if (existingEmail || existingUsername) {
-      console.log("User already exists:", { existingEmail, existingUsername });
-      return res.status(409).json({ message: "User already exists" });
+    if (existingEmail && !existingEmail.isDeleted) {
+      return res.status(409).json({ message: "Email already in use" });
     }
 
-    // Hash the password
+    if (existingUsername && !existingUsername.isDeleted) {
+      return res.status(409).json({ message: "Username already in use" });
+    }
+
+    // If the email exists but is soft-deleted, reactivate the user
+    if (existingEmail && existingEmail.isDeleted) {
+      existingEmail.firstName = firstName;
+      existingEmail.fatherName = fatherName;
+      existingEmail.gfatherName = gfatherName;
+      existingEmail.department = department;
+      existingEmail.role = role;
+      existingEmail.username = username;
+      existingEmail.password = await bcrypt.hash(password, 13); // Rehash the password
+      existingEmail.status = "New";
+      existingEmail.isDeleted = false;
+      existingEmail.createdBy = createdBy;
+
+      // Save the reactivated user
+      await existingEmail.save();
+
+      // Log the activity
+      await UserActivityLog(
+        createdBy,
+        "reactivate_user",
+        "User reactivated",
+        req
+      );
+
+      console.log("User reactivated successfully:", existingEmail);
+      return res.status(200).json({
+        status: "success",
+        user: existingEmail,
+        message: "User reactivated successfully.",
+      });
+    }
+
+    // Hash the password for a new user
     const hashPassword = await bcrypt.hash(password, 13);
     console.log("Hashed password:", hashPassword);
 
-    // Attempt to log the activity
-    try {
-      const newLog = new UserActivityLog({
-        userId: createdBy,
-        action: "create_record",
-        description: "User created a new user record",
-        ipAddress: req.ip,
-        userAgent: req.get("User-Agent"),
-      });
+    // Log the activity for creating a new user
+    await logUserActivity(
+      createdBy,
+      "create_record",
+      "User created a new user record",
+      req
+    );
 
-      await newLog.save();
-      console.log("Activity logged successfully.");
-    } catch (logError) {
-      console.error("Error logging activity:", logError);
-    }
-
-    // Create the new user
+    // Create a new user
     const user = await User.create({
       firstName,
       fatherName,
