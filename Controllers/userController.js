@@ -74,7 +74,7 @@ const createUser = async (req, res) => {
     console.log("Hashed password:", hashPassword);
 
     // Log the activity for creating a new user
-    await logUserActivity(
+    await UserActivityLog(
       createdBy,
       "create_record",
       "User created a new user record",
