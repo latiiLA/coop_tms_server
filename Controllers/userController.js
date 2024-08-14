@@ -232,7 +232,7 @@ const deleteUser = async (req, res) => {
 
     // Check if the user's role is superadmin
     if (user.role === "superadmin") {
-      return res.status(403).json({ message: "Superadmin cannot be delete." });
+      return res.status(403).json({ message: "Superadmin cannot be deleted." });
     }
 
     // Perform a soft delete if the role is not superadmin
@@ -279,7 +279,63 @@ const resetCount = async (req, res) => {
   } catch (error) {
     // Handle any errors
     console.error("Error resetting user password:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Error while unlocking the user." });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  console.log("Inside resetPassword controller");
+  try {
+    // Extract user ID from request parameters
+    const userId = req.params.id;
+
+    // Validate user ID (you can use a more robust validation if needed)
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required" });
+    }
+
+    // Fetch the user details
+    const user = await User.findById(userId);
+
+    // If the user does not exist
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    // Set the default password and hash it
+    const defaultPassword = "12341234";
+    const hashPassword = await bcrypt.hash(defaultPassword, 13);
+
+    // Update the user's role and status
+    if (user.role === "admin") {
+      user.role = "tempo_admin";
+    } else if (user.role === "user") {
+      user.role = "tempo_user";
+    } else if (user.role === "superadmin") {
+      user.role = "tempo_superadmin";
+    }
+
+    user.password = hashPassword;
+    user.status = "New";
+    user.wrongPasswordCount = 0;
+
+    // Save the updated user data
+    await user.save();
+
+    // Log the password reset activity
+    await UserActivityLog(
+      user._id,
+      "reset_password",
+      "User reset their password",
+      req
+    );
+
+    // Respond with success
+    res.status(200).json({ message: "Password reset successfully." });
+  } catch (error) {
+    // Handle any errors
+    console.error("Error resetting user password:", error);
+    res.status(500).json({ message: "Error while resetting user password." });
   }
 };
 
@@ -396,4 +452,5 @@ export {
   getUserRole,
   resetCount,
   forgotPassword,
+  resetPassword,
 };
