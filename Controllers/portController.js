@@ -91,10 +91,98 @@ const getPorts = async (req, res) => {
 //   }
 // };
 
+// const getAssignedPorts = async (req, res) => {
+//   try {
+//     const { portSiteAssignment, portAssignment } = req.query;
+//     console.log("Query Params:", portSiteAssignment, portAssignment); // Log query params
+
+//     // Fetch ports based on the specified type and site
+//     const specificPorts = await Port.find({
+//       portAssignment: portAssignment,
+//       portSiteAssignment: portSiteAssignment,
+//       isDeleted: false,
+//     }).select("portNumber portCapacity usedPorts");
+
+//     console.log("Specific Ports:", specificPorts); // Log specific ports
+
+//     // Fetch ports assigned to BothType with the specified site
+//     const bothTypePorts = await Port.find({
+//       portAssignment: "BothType",
+//       portSiteAssignment: portSiteAssignment,
+//       isDeleted: false,
+//     }).select("portNumber portCapacity usedPorts");
+
+//     console.log("BothType Ports:", bothTypePorts); // Log BothType ports
+
+//     // Fetch ports assigned to BothSite with the specified type
+//     const bothSitePorts = await Port.find({
+//       portAssignment: portAssignment,
+//       portSiteAssignment: "BothSite",
+//       isDeleted: false,
+//     }).select("portNumber portCapacity usedPorts");
+
+//     console.log("BothSite Ports:", bothSitePorts); // Log BothSite ports
+
+//     // Fetch ports assigned to BothType and BothSite (no specific filter)
+//     const bothTypeAndSitePorts = await Port.find({
+//       portAssignment: "BothType",
+//       portSiteAssignment: "BothSite",
+//       isDeleted: false,
+//     }).select("portNumber portCapacity usedPorts");
+
+//     console.log("BothType and BothSite Ports:", bothTypeAndSitePorts); // Log BothType and BothSite ports
+
+//     // Combine all fetched ports
+//     const allPorts = [
+//       ...specificPorts,
+//       ...bothTypePorts,
+//       ...bothSitePorts,
+//       ...bothTypeAndSitePorts,
+//     ];
+
+//     console.log("All Ports Before Deduplication:", allPorts); // Log all ports before deduplication
+
+//     // Remove duplicates based on portNumber
+//     const uniquePortsMap = new Map();
+//     allPorts.forEach((port) => {
+//       if (!uniquePortsMap.has(port.portNumber)) {
+//         uniquePortsMap.set(port.portNumber, port);
+//       }
+//     });
+
+//     const uniquePorts = Array.from(uniquePortsMap.values());
+
+//     console.log("Unique Ports:", uniquePorts); // Log unique ports
+
+//     // Filter ports where usedPortsCount is less than portCapacity
+//     const availablePorts = uniquePorts
+//       .filter((port) => {
+//         console.log(
+//           `Port: ${port.portNumber}, Capacity: ${port.portCapacity}, Used: ${port.usedPorts}`
+//         );
+//         return port.usedPorts <= port.portCapacity;
+//       })
+//       .map((port) => port.portNumber);
+
+//     console.log("Available Ports:", availablePorts); // Log available ports
+
+//     // Respond with the available port numbers as JSON
+//     res.status(200).json({ availablePorts });
+//   } catch (error) {
+//     console.error("Error fetching assigned ports:", error);
+//     res.status(500).json({ error: "Failed to fetch assigned ports" });
+//   }
+// };
+
 const getAssignedPorts = async (req, res) => {
   try {
-    const { portSiteAssignment, portAssignment } = req.query;
-    console.log("Query Params:", portSiteAssignment, portAssignment); // Log query params
+    const { portSiteAssignment, portAssignment, currentPort } = req.query;
+    console.log(
+      "Query Params:",
+      portSiteAssignment,
+      portAssignment,
+      currentPort
+    ); // Log query params
 
     // Fetch ports based on the specified type and site
     const specificPorts = await Port.find({
@@ -133,7 +221,7 @@ const getAssignedPorts = async (req, res) => {
     console.log("BothType and BothSite Ports:", bothTypeAndSitePorts); // Log BothType and BothSite ports
 
     // Combine all fetched ports
-    const allPorts = [
+    let allPorts = [
       ...specificPorts,
       ...bothTypePorts,
       ...bothSitePorts,
@@ -150,19 +238,57 @@ const getAssignedPorts = async (req, res) => {
       }
     });
 
-    const uniquePorts = Array.from(uniquePortsMap.values());
+    let uniquePorts = Array.from(uniquePortsMap.values());
 
     console.log("Unique Ports:", uniquePorts); // Log unique ports
 
     // Filter ports where usedPortsCount is less than portCapacity
-    const availablePorts = uniquePorts
-      .filter((port) => {
+    const filteredPorts = uniquePorts.filter((port) => {
+      const isAvailable = port.usedPorts < port.portCapacity;
+      console.log(
+        `Port: ${port.portNumber}, Capacity: ${port.portCapacity}, Used: ${port.usedPorts}, Is Available: ${isAvailable}`
+      );
+      return isAvailable;
+    });
+
+    // Check if the current port fits the criteria and add it if needed
+    if (currentPort) {
+      const currentPortMatch = await Port.findOne({
+        portNumber: currentPort,
+        isDeleted: false,
+      }).select(
+        "portNumber portCapacity usedPorts portAssignment portSiteAssignment"
+      );
+
+      console.log("Current Port Match:", currentPortMatch); // Log current port match
+
+      if (currentPortMatch) {
+        const {
+          portAssignment: currentPortAssignment,
+          portSiteAssignment: currentPortSiteAssignment,
+        } = currentPortMatch;
+
+        // Determine if the current port should be included
+        const includeCurrentPort =
+          currentPortAssignment === "BothType" ||
+          (currentPortAssignment === portAssignment &&
+            currentPortSiteAssignment === "BothSite") ||
+          (currentPortAssignment === portAssignment &&
+            currentPortSiteAssignment === portSiteAssignment);
+
         console.log(
-          `Port: ${port.portNumber}, Capacity: ${port.portCapacity}, Used: ${port.usedPorts}`
+          `Including current port ${currentPort} based on criteria: ${includeCurrentPort}`
         );
-        return port.usedPorts < port.portCapacity;
-      })
-      .map((port) => port.portNumber);
+
+        if (includeCurrentPort) {
+          // Add current port to the list if it meets the criteria
+          filteredPorts.push(currentPortMatch);
+        }
+      }
+    }
+
+    // Prepare the list of available ports for response
+    const availablePorts = filteredPorts.map((port) => port.portNumber);
 
     console.log("Available Ports:", availablePorts); // Log available ports
 
