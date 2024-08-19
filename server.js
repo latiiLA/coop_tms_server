@@ -44,6 +44,7 @@ import terminalRoute from "./Routes/terminalRoute.js";
 import portRoute from "./Routes/portRoute.js";
 import searchRoute from "./Routes/searchRoute.js";
 import logRoute from "./Routes/logRoute.js";
+import executeCommandRoute from "./Routes/executeCommandRoute.js";
 // Connect to MongoDB and start the server
 mongoose
   .connect(process.env.MONGODB_URL)
@@ -65,3 +66,4 @@ app.use("/terminal", terminalRoute);
 app.use("/port", portRoute);
 app.use("/search", searchRoute);
 app.use("/log", logRoute);
+app.use("/executecommand", executeCommandRoute);
