@@ -141,6 +141,11 @@ const getSiteCounts = async (req, res) => {
   try {
     const terminals = await Terminal.aggregate([
       {
+        $match: {
+          isDeleted: { $ne: true },
+        },
+      },
+      {
         $group: {
           _id: { type: "$type", site: "$site" },
           count: { $sum: 1 },
@@ -186,6 +191,7 @@ const getSiteCounts = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
 const updateTerminal = async (req, res) => {
   const { id } = req.params;
   const updateData = req.body;
