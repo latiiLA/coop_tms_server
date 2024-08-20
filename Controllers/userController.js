@@ -155,7 +155,7 @@ const loginUser = async (req, res) => {
         .json({ message: "Username or password is incorrect." });
     }
 
-    if (user.wrongPasswordCount > 4) {
+    if (user.wrongPasswordCount > 10) {
       return res.status(401).json({
         message: "Your account is locked! Please contact your administrator.",
       });
