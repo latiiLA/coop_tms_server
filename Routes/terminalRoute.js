@@ -11,6 +11,7 @@ import {
   getSiteCounts,
   updateTerminal,
   deleteTerminal,
+  getAllTerminal,
 } from "../Controllers/terminalController.js";
 
 // CREATE terminal
@@ -20,6 +21,9 @@ router
 
 // get terminals
 router.route("/getTerminal").get(isAuthenticated, getTerminal);
+
+// get terminals
+router.route("/getAllTerminal").get(isAuthenticated, getAllTerminal);
 
 // get terminal count of their respective type
 router.route("/getTerminalCounts").get(isAuthenticated, getTerminalCounts);

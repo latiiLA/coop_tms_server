@@ -110,6 +110,32 @@ const getTerminal = async (req, res) => {
   }
 };
 
+const getAllTerminal = async (req, res) => {
+  try {
+    let role = req.auth_user.role;
+    // console.log("user in get terminal", role);
+    const terminals = await Terminal.find();
+
+    // console.log(terminals);
+
+    res.status(200).json({
+      status: "true",
+      terminals,
+      role,
+    });
+  } catch (error) {
+    // Log the error (optional)
+    console.error(error);
+
+    // Send back an error response
+    res.status(500).json({
+      status: false,
+      message: "Failed to retrieve terminals",
+      error: error.message,
+    });
+  }
+};
+
 const getTerminalCounts = async (req, res) => {
   try {
     const terminalsCount = await Terminal.aggregate([
@@ -362,4 +388,5 @@ export {
   getSiteCounts,
   updateTerminal,
   deleteTerminal,
+  getAllTerminal,
 };
