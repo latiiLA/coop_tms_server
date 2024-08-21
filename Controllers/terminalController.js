@@ -79,7 +79,8 @@ const createTerminal = async (req, res) => {
 
     res.status(500).json({
       status: "error",
-      error: error.message || "An error occurred while creating the terminal.",
+      message:
+        error.message || "An error occurred while creating the terminal.",
     });
   }
 };
