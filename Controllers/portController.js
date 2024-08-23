@@ -1,4 +1,5 @@
 import Port from "../Models/portModel.js";
+import UserActivityLog from "../Models/userActivityLogModel.js";
 
 const createPort = async (req, res) => {
   let createdBy = req.auth_user._id;
@@ -30,6 +31,18 @@ const createPort = async (req, res) => {
       portCapacity,
       createdBy,
     });
+
+    // Log the activity
+    const newLog = new UserActivityLog({
+      userId: req.auth_user._id,
+      action: "Create Port",
+      description: `User ${req.auth_user.firstName} with userId ${req.auth_user._id} created new Port with port Number ${portNumber}.`,
+      ipAddress: req.ip,
+      userAgent: req.get("User-Agent"),
+    });
+
+    // Save the log to the database
+    await newLog.save();
 
     console.log(new_port);
     res.status(200).json({
@@ -332,6 +345,19 @@ const deletePort = async (req, res) => {
 
     // Perform a soft delete by updating the document
     await Port.findByIdAndDelete(portId);
+
+    // Log the activity
+    const newLog = new UserActivityLog({
+      userId: req.auth_user._id,
+      action: "Delete Port",
+      description: `User ${req.auth_user.firstName} with userId ${req.auth_user._id} deleted Port with port Number ${port.portNumber}.`,
+      ipAddress: req.ip,
+      userAgent: req.get("User-Agent"),
+    });
+
+    // Save the log to the database
+    await newLog.save();
+
     res.status(200).json({ message: "Port deleted successfully" });
   } catch (error) {
     // Handle any errors

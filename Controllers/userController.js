@@ -214,16 +214,17 @@ const loginUser = async (req, res) => {
 
 const deleteUser = async (req, res) => {
   try {
+    const auth_user = req.auth_user;
     // Extract user ID from request parameters
-    const userId = req.params.id;
+    const delete_userId = req.params.id;
 
     // Validate user ID (you can use a more robust validation if needed)
-    if (!userId) {
+    if (!delete_userId) {
       return res.status(400).json({ message: "User ID is required" });
     }
 
     // Fetch the user details to check their role
-    const user = await User.findById(userId);
+    const user = await User.findById(delete_userId);
 
     // If the user does not exist
     if (!user) {
@@ -237,10 +238,22 @@ const deleteUser = async (req, res) => {
 
     // Perform a soft delete if the role is not superadmin
     const response = await User.findByIdAndUpdate(
-      userId,
+      delete_userId,
       { status: "Deleted", isDeleted: true },
       { new: true }
     );
+
+    // Log the successful login activity
+    const newLog = new UserActivityLog({
+      userId: auth_user._id,
+      deleted_userId: delete_userId,
+      action: "User Deletion",
+      description: `User ${user.firstName} with ${delete_userId} user Id is deleted by user ${auth_user.firstName}.`,
+      ipAddress: req.ip,
+      userAgent: req.get("User-Agent"),
+    });
+
+    await newLog.save();
 
     // Return a success response
     res.status(200).json({ message: "User marked as deleted successfully" });
@@ -255,24 +268,36 @@ const resetCount = async (req, res) => {
   console.log("inside resetCount controller");
   try {
     // Extract terminal ID from request parameters
-    const userId = req.params.id;
+    const auth_user = req.auth_user;
+    const affected_user_Id = req.params.id;
 
     // Validate terminal ID (you can use a more robust validation if needed)
-    if (!userId) {
+    if (!affected_user_Id) {
       return res.status(400).json({ message: "User ID is required" });
     }
 
-    // Interact with the database to perform a soft delete
-    const result = await User.findByIdAndUpdate(
-      userId,
+    const user = await User.findByIdAndUpdate(
+      affected_user_Id,
       { wrongPasswordCount: 0 },
       { new: true }
     );
 
     // If the terminal does not exist
-    if (!result) {
+    if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
+
+    // Log the successful login activity
+    const newLog = new UserActivityLog({
+      userId: auth_user._id,
+      affected_user_Id: affected_user_Id,
+      action: "Unlock password",
+      description: `User ${user.firstName} with ${affected_user_Id} user Id's password is unlocked by user ${auth_user.firstName}.`,
+      ipAddress: req.ip,
+      userAgent: req.get("User-Agent"),
+    });
+
+    await newLog.save();
 
     // Return a success response
     res.status(200).json({ message: "User password is resetted successfully" });
@@ -287,6 +312,7 @@ const resetPassword = async (req, res) => {
   console.log("Inside resetPassword controller");
   try {
     // Extract user ID from request parameters
+    const auth_user = req.auth_user;
     const userId = req.params.id;
 
     // Validate user ID (you can use a more robust validation if needed)
@@ -322,13 +348,17 @@ const resetPassword = async (req, res) => {
     // Save the updated user data
     await user.save();
 
-    // Log the password reset activity
-    await UserActivityLog(
-      user._id,
-      "reset_password",
-      "User reset their password",
-      req
-    );
+    // Log the user activity
+    const newLog = new UserActivityLog({
+      userId: auth_user._id,
+      affected_user_Id: user._id,
+      action: "Reset password",
+      description: `User ${user.firstName} with ${user._id} user Id's password is unlocked by user ${auth_user.firstName}.`,
+      ipAddress: req.ip,
+      userAgent: req.get("User-Agent"),
+    });
+
+    await newLog.save();
 
     // Respond with success
     res.status(200).json({ message: "Password reset successfully." });
@@ -426,6 +456,17 @@ const forgotPassword = async (req, res) => {
 
     // Save the updated user
     await foundUser.save();
+
+    // Log the user activity
+    const newLog = new UserActivityLog({
+      userId: user._id,
+      action: "Change password",
+      description: `User ${user.firstName} with ${user._id} changed password.`,
+      ipAddress: req.ip,
+      userAgent: req.get("User-Agent"),
+    });
+
+    await newLog.save();
 
     res.status(200).json({
       // token: token,

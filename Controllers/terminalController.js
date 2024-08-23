@@ -1,5 +1,6 @@
 import Terminal from "../Models/terminalModel.js";
 import Port from "../Models/portModel.js";
+import UserActivityLog from "../Models/userActivityLogModel.js";
 import mongoose from "mongoose";
 
 const createTerminal = async (req, res) => {
@@ -70,6 +71,18 @@ const createTerminal = async (req, res) => {
       ipAddress,
       createdBy,
     });
+
+    // Log the activity
+    const newLog = new UserActivityLog({
+      userId: createdBy,
+      action: "Create Terminal",
+      description: `User ${req.auth_user.firstName} with userId ${createdBy} created new Terminal with unitId ${unitId}.`,
+      ipAddress: req.ip,
+      userAgent: req.get("User-Agent"),
+    });
+
+    // Save the log to the database
+    await newLog.save();
 
     console.log(terminal);
     res.status(200).json({
@@ -225,6 +238,7 @@ const getSiteCounts = async (req, res) => {
 const updateTerminal = async (req, res) => {
   const { id } = req.params;
   const updateData = req.body;
+  const auth_user = req.auth_user;
 
   try {
     // Find the existing terminal
@@ -255,6 +269,18 @@ const updateTerminal = async (req, res) => {
       if (!updatedTerminal) {
         return res.status(404).json({ message: "Terminal not found." });
       }
+
+      // Log the activity
+      const newLog = new UserActivityLog({
+        userId: auth_user._id,
+        action: "Delete Terminal",
+        description: `User ${auth_user.firstName} with userId ${auth_user._id} Deleted Terminal with unitId ${updateData.unitId}.`,
+        ipAddress: req.ip,
+        userAgent: req.get("User-Agent"),
+      });
+
+      // Save the log to the database
+      await newLog.save();
 
       return res.status(200).json({
         message: "Terminal successfully updated.",
@@ -339,6 +365,18 @@ const updateTerminal = async (req, res) => {
     if (!updatedTerminal) {
       return res.status(404).json({ message: "Terminal not found." });
     }
+
+    // Log the activity
+    const newLog = new UserActivityLog({
+      userId: auth_user._id,
+      action: "Update Terminal",
+      description: `User ${auth_user.firstName} with userId ${auth_user._id} updated Terminal with unitId ${updateData.unitId}.`,
+      ipAddress: req.ip,
+      userAgent: req.get("User-Agent"),
+    });
+
+    // Save the log to the database
+    await newLog.save();
 
     res.status(200).json({
       message: "Terminal successfully updated.",
