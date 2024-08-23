@@ -34,7 +34,10 @@ const createTerminal = async (req, res) => {
       throw new Error("CBS account already exists.");
     }
 
-    const existingIpAddress = await Terminal.findOne({ ipAddress });
+    const existingIpAddress = await Terminal.findOne({
+      ipAddress,
+      isDeleted: false,
+    });
     if (existingIpAddress) {
       throw new Error("Ip address already exists.");
     }
@@ -224,6 +227,41 @@ const updateTerminal = async (req, res) => {
   const updateData = req.body;
 
   try {
+    // Find the existing terminal
+    const existingTerminal = await Terminal.findById(id);
+    if (!existingTerminal) {
+      return res.status(404).json({ message: "Terminal not found." });
+    }
+
+    // Handle soft delete and port update
+    if (updateData.status === "Stopped" || updateData.status === "Relocated") {
+      updateData.isDeleted = true;
+
+      // Decrement the usedPorts count for the current port
+      const existingPort = await Port.findOne({
+        portNumber: existingTerminal.port,
+      });
+      if (existingPort) {
+        existingPort.usedPorts -= 1;
+        await existingPort.save();
+      }
+
+      // Update the terminal with the new data
+      const updatedTerminal = await Terminal.findByIdAndUpdate(id, updateData, {
+        new: true,
+        runValidators: true,
+      });
+
+      if (!updatedTerminal) {
+        return res.status(404).json({ message: "Terminal not found." });
+      }
+
+      return res.status(200).json({
+        message: "Terminal successfully updated.",
+        terminal: updatedTerminal,
+      });
+    }
+
     // Validate if the terminalId is already in use
     const existingTerminalById = await Terminal.findOne({
       _id: { $ne: id }, // Exclude the current terminal being updated
@@ -247,6 +285,7 @@ const updateTerminal = async (req, res) => {
     const existingTerminalByIpAddress = await Terminal.findOne({
       _id: { $ne: id },
       ipAddress: updateData.ipAddress,
+      isDeleted: false,
     });
     if (existingTerminalByIpAddress) {
       return res.status(400).json({ message: "IP Address already exists." });
@@ -261,39 +300,37 @@ const updateTerminal = async (req, res) => {
       return res.status(400).json({ message: "CBS Account already exists." });
     }
 
-    // if (existingPort.portSiteAssignment !== updateData.site) {
-    //   return res
-    //     .status(400)
-    //     .json({ message: "This port is not assigned for this site." });
-    // }
-    // if (existingPort.portAssignment !== updateData.type) {
-    //   return res
-    //     .status(400)
-    //     .json({ message: "This port is not assigned for this ATM type." });
-    // }
-
-    // Find the existing terminal
-    const existingTerminal = await Terminal.findById(id);
-    if (!existingTerminal) {
-      return res.status(404).json({ message: "Terminal not found." });
-    }
-
-    if (updateData.status === "Stopped" || updateData.status === "Relocated") {
-      updateData.isDeleted = true;
-    }
-
+    // Check if the port number has changed
     if (existingTerminal.port !== updateData.port) {
-      // Validate if the port number exists and has capacity
-      const existingPort = await Port.findOne({ portNumber: updateData.port });
-      if (!existingPort) {
-        return res.status(400).json({ message: "Port number does not exist." });
+      // Validate if the new port number exists and has capacity
+      const newPort = await Port.findOne({ portNumber: updateData.port });
+      if (!newPort) {
+        return res
+          .status(400)
+          .json({ message: "New port number does not exist." });
       }
-      if (existingPort.usedPorts >= existingPort.portCapacity) {
-        return res.status(400).json({ message: "Port capacity is reached." });
+      if (newPort.usedPorts >= newPort.portCapacity) {
+        return res
+          .status(400)
+          .json({ message: "New port capacity is reached." });
+      }
+
+      // Increase usedPorts count for the new port
+      newPort.usedPorts += 1;
+      await newPort.save();
+
+      // Fetch the existing port document for the current terminal
+      const existingPort = await Port.findOne({
+        portNumber: existingTerminal.port,
+      });
+      if (existingPort) {
+        // Decrease usedPorts count for the existing port
+        existingPort.usedPorts -= 1;
+        await existingPort.save();
       }
     }
 
-    // Update the terminal
+    // Update the terminal with the new data
     const updatedTerminal = await Terminal.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: true,
@@ -303,24 +340,10 @@ const updateTerminal = async (req, res) => {
       return res.status(404).json({ message: "Terminal not found." });
     }
 
-    // Check if port has changed
-    if (existingTerminal.port !== updateData.port) {
-      // Fetch the existing port document for the current terminal
-      const existingPort = await Port.findById(existingTerminal.port);
-      const newPort = await Port.findById(updateData.port);
-
-      if (existingPort && newPort) {
-        // Decrease usedPorts count for the existing port
-        existingPort.usedPorts -= 1;
-        await existingPort.save();
-
-        // Increase usedPorts count for the new port
-        newPort.usedPorts += 1;
-        await newPort.save();
-      }
-    }
-
-    res.status(200).json({ message: "Terminal successfully updated." });
+    res.status(200).json({
+      message: "Terminal successfully updated.",
+      terminal: updatedTerminal,
+    });
   } catch (error) {
     if (error.code === 11000) {
       // Duplicate key error

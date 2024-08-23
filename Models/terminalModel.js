@@ -42,7 +42,7 @@ const terminalSchema = mongoose.Schema(
     },
     ipAddress: {
       type: String,
-      unique: true,
+      // unique: true,
       required: [true, "Please enter ip Address."],
     },
     createdBy: {

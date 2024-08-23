@@ -36,15 +36,15 @@ const portSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-portSchema.pre("save", function (next) {
-  if (!this.portAssignment || this.portAssignment.length === 0) {
-    this.portAssignment = ["NCR", "CRM"];
-  }
-  if (!this.portSiteAssignment || this.portSiteAssignment.length === 0) {
-    this.portSiteAssignment = ["ONSITE", "OFFSITE"];
-  }
-  next();
-});
+// portSchema.pre("save", function (next) {
+//   if (!this.portAssignment || this.portAssignment.length === 0) {
+//     this.portAssignment = ["NCR", "CRM"];
+//   }
+//   if (!this.portSiteAssignment || this.portSiteAssignment.length === 0) {
+//     this.portSiteAssignment = ["ONSITE", "OFFSITE"];
+//   }
+//   next();
+// });
 
 const Port = mongoose.model("Port", portSchema);
 
