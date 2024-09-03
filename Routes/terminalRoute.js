@@ -12,6 +12,7 @@ import {
   updateTerminal,
   deleteTerminal,
   getAllTerminal,
+  getRelocatedTerminal,
 } from "../Controllers/terminalController.js";
 
 // CREATE terminal
@@ -40,5 +41,10 @@ router
 router
   .route("/deleteTerminal/:id")
   .patch(isAuthenticated, isAuthorized(), deleteTerminal);
+
+//Relocated
+router
+  .route("/getRelocatedTerminal")
+  .get(isAuthenticated, isAuthorized(), getRelocatedTerminal);
 
 export default router;
