@@ -96,7 +96,7 @@ const createUser = async (req, res) => {
 
     // Respond with success
     console.log("User created successfully:", user);
-    res.status(201).json({
+    return res.status(201).json({
       status: "success",
       user,
       message: "User created successfully.",
@@ -106,6 +106,51 @@ const createUser = async (req, res) => {
     res.status(500).json({
       status: "error",
       message: "An error occurred while creating the user.",
+      error: error.message, // Include error message for debugging
+    });
+  }
+};
+
+const updateUser = async (req, res) => {
+  try {
+    let authUserId = req.auth_user._id;
+    const updateData = req.body; // Data to update
+
+    // Check if the user exists
+    const existingUser = await User.findById(authUserId);
+    if (!existingUser) {
+      return res.status(400).json({ message: "User does not exist" });
+    }
+
+    // Use $set to update only the fields provided in req.body
+    const updatedUser = await User.findByIdAndUpdate(
+      authUserId,
+      { $set: updateData }, // Set only the passed fields
+      {
+        new: true, // Return the updated document
+        runValidators: true, // Validate the updates
+      }
+    );
+
+    // Log the activity for updating the user profile
+    await UserActivityLog(
+      authUserId,
+      "Update profile",
+      "User updated their profile",
+      req
+    );
+
+    // Respond with success
+    res.status(200).json({
+      status: "success",
+      user: updatedUser,
+      message: "Profile updated successfully.",
+    });
+  } catch (error) {
+    console.error("Error updating a user:", error);
+    res.status(500).json({
+      status: "error",
+      message: "An error occurred while updating profile.",
       error: error.message, // Include error message for debugging
     });
   }
@@ -494,4 +539,5 @@ export {
   resetCount,
   forgotPassword,
   resetPassword,
+  updateUser,
 };

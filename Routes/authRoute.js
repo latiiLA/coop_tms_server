@@ -5,6 +5,7 @@ const router = express.Router();
 import {
   loginUser,
   createUser,
+  updateUser,
   getUser,
   deleteUser,
   logoutUser,
@@ -24,6 +25,8 @@ import {
 router
   .route("/createUser")
   .post(isAuthenticated, isSuperAuthorized(), createUser);
+
+router.route("/updateUser").patch(isAuthenticated, updateUser);
 
 // get users
 router.route("/getUser").get(isAuthenticated, isAuthorized(), getUser);

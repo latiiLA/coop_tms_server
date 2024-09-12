@@ -42,7 +42,7 @@ const userSchema = mongoose.Schema(
         "tempo_admin",
         "tempo_superadmin",
       ],
-      default: "user",
+      default: "tempo_user",
     },
     password: {
       type: String,
@@ -50,6 +50,13 @@ const userSchema = mongoose.Schema(
       trim: true,
       // minLength: 8,
       select: false,
+    },
+    phoneNumber: {
+      type: String,
+    },
+    gender: {
+      type: String,
+      enum: ["MALE", "FEMALE"],
     },
     createdBy: {
       type: mongoose.Types.ObjectId,
