@@ -46,6 +46,7 @@ import searchRoute from "./Routes/searchRoute.js";
 import logRoute from "./Routes/logRoute.js";
 import executeCommandRoute from "./Routes/executeCommandRoute.js";
 import branchRoute from "./Routes/branchRoute.js";
+import feedbackRoute from "./Routes/feedbackRoute.js";
 // Connect to MongoDB and start the server
 mongoose
   .connect(process.env.MONGODB_URL)
@@ -69,3 +70,4 @@ app.use("/search", searchRoute);
 app.use("/branch", branchRoute);
 app.use("/log", logRoute);
 app.use("/executecommand", executeCommandRoute);
+app.use("/feedback", feedbackRoute);
